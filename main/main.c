@@ -54,8 +54,31 @@ void avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param)
     if (event == ESP_AVRC_CT_METADATA_RSP_EVT) {
         if (param->meta_rsp.attr_id == ESP_AVRC_MD_ATTR_TITLE) {
         printf("Title: %s\n", param->meta_rsp.attr_text);
+        //hd44780_clear(&lcd);
+        //hd44780_gotoxy(&lcd, 0, 0);
+        //hd44780_puts(&lcd, "Mode: ");
         }
     }
+}
+
+void lcd(void *pvParameters){
+    hd44780_t lcd =
+    {
+        .write_cb = NULL,
+        .font = HD44780_FONT_5X8,
+        .lines = 2,
+        .pins = {
+            .rs = GPIO_NUM_34,
+            .e  = GPIO_NUM_35,
+            .d4 = GPIO_NUM_32,
+            .d5 = GPIO_NUM_33,
+            .d6 = GPIO_NUM_25,
+            .d7 = GPIO_NUM_26,
+            .bl = HD44780_NOT_USED
+        }
+    };
+
+    ESP_ERROR_CHECK(hd44780_init(&lcd));
 }
 
 static char *bda2str(uint8_t * bda, char *str, size_t size)
@@ -214,6 +237,7 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
 
 void app_main(void)
 {
+    lcd();
     char bda_str[18] = {0};
     /* initialize NVS — it is used to store PHY calibration data */
     esp_err_t err = nvs_flash_init();
