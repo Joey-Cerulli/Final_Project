@@ -24,7 +24,9 @@
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 #include "esp_a2dp_api.h"
-#include "esp_avrc_api.h"
+#include "esp_avrc_api.h"\
+
+char TITLE[128];
 
 /* device name */
 static const char local_device_name[] = "BC SPECIALS";
@@ -50,13 +52,19 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param);
  ******************************/
 void avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param)
 {
-    //printf("RUNNINGNGNGNG THE THINGYYYYYYYYYY RING THAT BELL AYYYYYYYY\n");
     if (event == ESP_AVRC_CT_METADATA_RSP_EVT) {
         if (param->meta_rsp.attr_id == ESP_AVRC_MD_ATTR_TITLE) {
-        printf("Title: %s\n", param->meta_rsp.attr_text);
-        //hd44780_clear(&lcd);
-        //hd44780_gotoxy(&lcd, 0, 0);
-        //hd44780_puts(&lcd, "Mode: ");
+
+            const uint8_t *src = param->meta_rsp.attr_text;
+            size_t len = param->meta_rsp.attr_length;   // length provided by ESP-IDF
+
+            size_t max = sizeof(TITLE) - 1;
+            size_t copy_len = (len < max) ? len : max;
+
+            memcpy(TITLE, src, copy_len);
+            TITLE[copy_len] = '\0';
+
+            printf("Title: %s\n", TITLE);
         }
     }
 }
@@ -68,15 +76,21 @@ void lcd(void *pvParameters){
         .font = HD44780_FONT_5X8,
         .lines = 2,
         .pins = {
-            .rs = GPIO_NUM_34,
-            .e  = GPIO_NUM_35,
-            .d4 = GPIO_NUM_32,
-            .d5 = GPIO_NUM_33,
-            .d6 = GPIO_NUM_25,
-            .d7 = GPIO_NUM_26,
+            .rs = GPIO_NUM_2,
+            .e  = GPIO_NUM_4,
+            .d4 = GPIO_NUM_16,
+            .d5 = GPIO_NUM_17,
+            .d6 = GPIO_NUM_18,
+            .d7 = GPIO_NUM_19,
             .bl = HD44780_NOT_USED
         }
     };
+        while(1) {
+        hd44780_clear(&lcd);
+        hd44780_gotoxy(&lcd, 0, 0);
+        hd44780_puts(&lcd, TITLE);
+        vTaskDelay(20/portTICK_PERIOD_MS);
+        }
 
     ESP_ERROR_CHECK(hd44780_init(&lcd));
 }
@@ -237,7 +251,8 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
 
 void app_main(void)
 {
-    lcd();
+    //Handles LCD functions
+    xTaskCreatePinnedToCore(lcd, "LCDmessages", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL, 0);
     char bda_str[18] = {0};
     /* initialize NVS — it is used to store PHY calibration data */
     esp_err_t err = nvs_flash_init();
