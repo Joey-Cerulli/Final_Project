@@ -15,6 +15,7 @@
 #include "nvs_flash.h"
 #include "esp_system.h"
 #include "esp_log.h"
+#include "hd44780.h"
 
 #include "esp_bt.h"
 #include "bt_app_core.h"
