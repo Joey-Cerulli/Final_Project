@@ -26,6 +26,14 @@
 #include "esp_a2dp_api.h"
 #include "esp_avrc_api.h"
 
+#define next GPIO_NUM_36           //Next button pin
+#define prev GPIO_NUM_34           //Previous button pin
+#define play GPIO_NUM_39           //Play/Pause button pin
+#define leftVol ADC_CHANNEL_4      //Left Volume adjusting potentiometer pin
+#define rightVol ADC_CHANNEL_5     //Right volume adjusting potentiometer pin
+#define ADC_ATTEN ADC_ATTEN_DB_12  //ADC Attenuation
+#define BITWIDTH ADC_BITWIDTH_12   //ADC Bitwidth
+
 /* device name */
 static const char local_device_name[] = "BC SPECIALS";
 
@@ -79,6 +87,20 @@ void lcd(void *pvParameters){
     };
 
     ESP_ERROR_CHECK(hd44780_init(&lcd));
+}
+
+void config(){
+    gpio_reset_pin(prev);
+    gpio_set_direction(prev, GPIO_MODE_INPUT);
+    gpio_pulldown_en(prev);
+
+    gpio_reset_pin(play);
+    gpio_set_direction(play, GPIO_MODE_INPUT);
+    gpio_pulldown_en(play);
+
+    gpio_reset_pin(next);
+    gpio_set_direction(next, GPIO_MODE_INPUT);
+    gpio_pulldown_en(next);
 }
 
 static char *bda2str(uint8_t * bda, char *str, size_t size)
@@ -238,6 +260,7 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
 void app_main(void)
 {
     lcd();
+    config();
     char bda_str[18] = {0};
     /* initialize NVS — it is used to store PHY calibration data */
     esp_err_t err = nvs_flash_init();
