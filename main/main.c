@@ -78,14 +78,14 @@ void avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param)
 }
 
 void lcd(void *pvParameters){
-    hd44780_t lcd =
+    static hd44780_t lcd =
     {
         .write_cb = NULL,
         .font = HD44780_FONT_5X8,
         .lines = 2,
         .pins = {
-            .rs = GPIO_NUM_2,
-            .e  = GPIO_NUM_4,
+            .rs = GPIO_NUM_27,
+            .e  = GPIO_NUM_25,
             .d4 = GPIO_NUM_16,
             .d5 = GPIO_NUM_17,
             .d6 = GPIO_NUM_18,
@@ -93,14 +93,17 @@ void lcd(void *pvParameters){
             .bl = HD44780_NOT_USED
         }
     };
+
+    vTaskDelay(50/portTICK_PERIOD_MS);
+    ESP_ERROR_CHECK(hd44780_init(&lcd));
         while(1) {
-        hd44780_clear(&lcd);
-        hd44780_gotoxy(&lcd, 0, 0);
-        hd44780_puts(&lcd, TITLE);
-        vTaskDelay(20/portTICK_PERIOD_MS);
+            hd44780_clear(&lcd);
+            hd44780_gotoxy(&lcd, 0, 0);
+            hd44780_puts(&lcd, "Hello");
+            vTaskDelay(50/portTICK_PERIOD_MS);
         }
 
-    ESP_ERROR_CHECK(hd44780_init(&lcd));
+    
 }
 
 void config(){
@@ -273,6 +276,7 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param)
 
 void app_main(void)
 {
+    config();
     //Handles LCD functions
     xTaskCreatePinnedToCore(lcd, "LCDmessages", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL, 0);
     char bda_str[18] = {0};
