@@ -84,8 +84,8 @@ void lcd(void *pvParameters){
         .font = HD44780_FONT_5X8,
         .lines = 2,
         .pins = {
-            .rs = GPIO_NUM_2,
-            .e  = GPIO_NUM_4,
+            .rs = GPIO_NUM_27,
+            .e  = GPIO_NUM_25,
             .d4 = GPIO_NUM_16,
             .d5 = GPIO_NUM_17,
             .d6 = GPIO_NUM_18,
@@ -95,8 +95,10 @@ void lcd(void *pvParameters){
     };
         while(1) {
         hd44780_clear(&lcd);
-        hd44780_gotoxy(&lcd, 0, 0);
+        hd44780_gotoxy(&lcd, 0, 1);
         hd44780_puts(&lcd, TITLE);
+        hd44780_gotoxy(&lcd, 0, 0);
+        hd44780_puts(&lcd, "Title:");
         vTaskDelay(20/portTICK_PERIOD_MS);
         }
 
