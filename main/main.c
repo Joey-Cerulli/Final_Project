@@ -39,6 +39,9 @@ char TITLE[128];
 /* device name */
 static const char local_device_name[] = "BC SPECIALS";
 
+typedef enum {INIT, PL_WAIT, PR_WAIT, NX_WAIT, PLAY, PREVIOUS, NEXT} State_t;
+State_t state = INIT;
+
 /* event for stack up */
 enum {
     BT_APP_EVT_STACK_UP = 0,
@@ -99,11 +102,52 @@ void lcd(void *pvParameters){
         while(1) {
             hd44780_clear(&lcd);
             hd44780_gotoxy(&lcd, 0, 0);
-            hd44780_puts(&lcd, "Hello");
+            hd44780_puts(&lcd, TITLE);
             vTaskDelay(50/portTICK_PERIOD_MS);
         }
+}
 
-    
+void buttonHandler(){
+    while (1){
+        bool pl = play;
+        bool pr = prev;
+        bool nx = next;
+        vTaskDelay(50/portTICK_PERIOD_MS);
+        switch(state){
+        case INIT:
+            if (pl&&!pr&&!nx){
+                state = PL_WAIT;
+            }
+            else if (!pl&&pr&&!nx){
+                state = PR_WAIT;
+            }
+            else{
+                state = NX_WAIT;
+            }
+        case PL_WAIT:
+            if (!pl){
+                state = PLAY;
+            }
+        case PR_WAIT:
+            if (!pr){
+                state = PREVIOUS;
+            }
+        case NX_WAIT:
+            if (!nx){
+                state = NEXT;
+            }
+        case PLAY:
+            //unpause/ pause song
+            state = INIT;
+        case PREVIOUS:
+            //go to previous song (if no previous song start song over)
+            state = INIT;
+        case NEXT:
+            //go to next song
+            state = INIT;
+        }
+
+    }
 }
 
 void config(){
@@ -279,6 +323,7 @@ void app_main(void)
     config();
     //Handles LCD functions
     xTaskCreatePinnedToCore(lcd, "LCDmessages", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(buttonHandler, "Button Handler", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL, 1);
     char bda_str[18] = {0};
     /* initialize NVS — it is used to store PHY calibration data */
     esp_err_t err = nvs_flash_init();
