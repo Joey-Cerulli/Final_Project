@@ -51,7 +51,7 @@ static void bt_app_work_dispatched(bt_app_msg_t *msg);
 static QueueHandle_t s_bt_app_task_queue = NULL;  /* handle of work queue */
 static TaskHandle_t s_bt_app_task_handle = NULL;  /* handle of application task  */
 static TaskHandle_t s_bt_i2s_task_handle = NULL;  /* handle of I2S task */
-static RingbufHandle_t s_ringbuf_i2s = NULL;     /* handle of ringbuffer for I2S */
+static RingbufHandle_t s_ringbuf_i2s = NULL;      /* handle of ringbuffer for I2S */
 static SemaphoreHandle_t s_i2s_write_semaphore = NULL;
 static uint16_t ringbuffer_mode = RINGBUFFER_MODE_PROCESSING;
 
@@ -132,6 +132,7 @@ static void bt_i2s_task_handler(void *arg)
                 item_size = 0;
                 /* receive data from ringbuffer and write it to I2S DMA transmit buffer */
                 data = (uint8_t *)xRingbufferReceiveUpTo(s_ringbuf_i2s, &item_size, (TickType_t)pdMS_TO_TICKS(20), item_size_upto);
+                printf("I2s Data %d bytes yummy yummy\n", bytes_written);
                 if (item_size == 0) {
                     ESP_LOGI(BT_APP_CORE_TAG, "ringbuffer underflowed! mode changed: RINGBUFFER_MODE_PREFETCHING");
                     ringbuffer_mode = RINGBUFFER_MODE_PREFETCHING;
@@ -210,7 +211,9 @@ void bt_i2s_task_start_up(void)
         ESP_LOGE(BT_APP_CORE_TAG, "%s, ringbuffer create failed", __func__);
         return;
     }
+    printf("Creating I2s Task!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     xTaskCreate(bt_i2s_task_handler, "BtI2STask", 2048, NULL, configMAX_PRIORITIES - 3, &s_bt_i2s_task_handle);
+    printf("Task CREATEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n");
 }
 
 void bt_i2s_task_shut_down(void)

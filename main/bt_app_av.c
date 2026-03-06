@@ -230,6 +230,7 @@ void bt_i2s_driver_install(void)
             },
         },
     };
+    
     /* enable I2S */
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &tx_chan, NULL));
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &std_cfg));
@@ -281,7 +282,8 @@ static void volume_change_simulation(void *arg)
     for (;;) {
         /* volume up locally every 10 seconds */
         vTaskDelay(10000 / portTICK_PERIOD_MS);
-        uint8_t volume = (s_volume + 5) & 0x7f;
+        //uint8_t volume = (s_volume + 5) & 0x7f;
+        uint8_t volume = 100;
         volume_set_by_local_host(volume);
     }
 }
