@@ -30,9 +30,9 @@
 char TITLE[128];
 char ARTIST[128];
 
-#define next GPIO_NUM_36           //Next button pin
-#define prev GPIO_NUM_34           //Previous button pin
-#define play GPIO_NUM_39           //Play/Pause button pin
+#define next GPIO_NUM_32           //Next button pin
+#define prev GPIO_NUM_23            //Previous button pin
+#define play GPIO_NUM_13           //Play/Pause button pin
 #define leftVol ADC_CHANNEL_4      //Left Volume adjusting potentiometer pin
 #define rightVol ADC_CHANNEL_5     //Right volume adjusting potentiometer pin
 #define ADC_ATTEN ADC_ATTEN_DB_12  //ADC Attenuation
@@ -41,8 +41,18 @@ char ARTIST[128];
 /* device name */
 static const char local_device_name[] = "BC SPECIALS";
 
-typedef enum {INIT, PL_WAIT, PR_WAIT, NX_WAIT, PLAY, PREVIOUS, NEXT} State_t;
-State_t state = INIT;
+static const uint8_t char_data[] =
+{
+    0x00, 0x04, 0x06, 0x05, 0x05, 0x0D, 0x1D, 0x00,
+    0x00, 0x0A, 0x00, 0x0E, 0x0A, 0x0A, 0x0E, 0x00
+};
+
+const char mesg1[] = "hey yall look at me im scrolling wooooooooo look at me go yayyy     ";
+const char mesg2[] = "hey yall its me again look at us yayyyyy yipee wahoooo     ";
+
+typedef enum {INIT, PL_WAIT, NX_WAIT, PLAY, NEXT} State_t;
+
+volatile bool songPlaying = false;
 
 /* event for stack up */
 enum {
@@ -116,54 +126,97 @@ void lcd(void *pvParameters){
         }
     };
 
+    gpio_config_t io_conf = {
+        .mode = GPIO_MODE_OUTPUT,
+        .pin_bit_mask =
+            (1ULL << lcd.pins.rs) |
+            (1ULL << lcd.pins.e)  |
+            (1ULL << lcd.pins.d4) |
+            (1ULL << lcd.pins.d5) |
+            (1ULL << lcd.pins.d6) |
+            (1ULL << lcd.pins.d7),
+    };
+    gpio_config(&io_conf);
+
     vTaskDelay(50/portTICK_PERIOD_MS);
     ESP_ERROR_CHECK(hd44780_init(&lcd));
-        while(1) {
-            hd44780_clear(&lcd);
-            hd44780_gotoxy(&lcd, 0, 0);
-            hd44780_puts(&lcd, TITLE);
-            vTaskDelay(50/portTICK_PERIOD_MS);
+   
+    hd44780_upload_character(&lcd, 3, char_data);
+    hd44780_upload_character(&lcd, 4, char_data + 8);
+
+
+    while (1)
+    {
+        static uint8_t pos1;
+        static uint8_t pos2;
+        hd44780_gotoxy(&lcd, 0, 0);
+        hd44780_putc(&lcd, 3);
+        hd44780_gotoxy(&lcd, 1, 0);
+        for (uint8_t i = 0; i < 15; i++) {
+            char c = mesg1[(pos1 + i) % (sizeof(mesg1) - 1)];
+            hd44780_putc(&lcd, c);
         }
+        pos1 = (pos1 + 1) % (sizeof(mesg1) - 1);
+           
+        hd44780_gotoxy(&lcd, 0, 1);
+        hd44780_putc(&lcd, 4);
+        hd44780_gotoxy(&lcd, 1, 1);
+        for (uint8_t i = 0; i < 15; i++) {
+            char c = mesg2[(pos2 + i) % (sizeof(mesg2) - 1)];
+            hd44780_putc(&lcd, c);
+        }
+        pos2 = (pos2 + 1) % (sizeof(mesg2) - 1);
+        vTaskDelay(pdMS_TO_TICKS(250));
+    }
 }
 
+
 void buttonHandler(){
-    while (1){
-        bool pl = play;
-        bool pr = prev;
-        bool nx = next;
-        vTaskDelay(50/portTICK_PERIOD_MS);
+    State_t state = INIT;
+    songPlaying = true;
+    bool playPressed = false;
+    //bool prevPressed = false;
+    bool nextPressed = false;
+    for(;;){
+        vTaskDelay(10/portTICK_PERIOD_MS);
         switch(state){
         case INIT:
-            if (pl&&!pr&&!nx){
+            //counter = 0;
+            if (gpio_get_level(play) == 1){
+                playPressed = true;
                 state = PL_WAIT;
             }
-            else if (!pl&&pr&&!nx){
-                state = PR_WAIT;
-            }
-            else{
+            else if (gpio_get_level(next) == 1){
+                nextPressed = true;
                 state = NX_WAIT;
             }
+            break;
         case PL_WAIT:
-            if (!pl){
+            if (gpio_get_level(play) == 0 && playPressed){
+                playPressed = false;
                 state = PLAY;
             }
-        case PR_WAIT:
-            if (!pr){
-                state = PREVIOUS;
-            }
+            break;
         case NX_WAIT:
-            if (!nx){
+            if (gpio_get_level(next) == 0 && nextPressed){
+                nextPressed = false;
                 state = NEXT;
             }
+            break; 
         case PLAY:
-            //unpause/ pause song
+            if (songPlaying){
+                esp_avrc_ct_send_passthrough_cmd(0, ESP_AVRC_PT_CMD_PAUSE, ESP_AVRC_PT_CMD_STATE_PRESSED);
+            }
+            else {
+                esp_avrc_ct_send_passthrough_cmd(0, ESP_AVRC_PT_CMD_PLAY, ESP_AVRC_PT_CMD_STATE_PRESSED);
+            }
+            songPlaying = !songPlaying;
             state = INIT;
-        case PREVIOUS:
-            //go to previous song (if no previous song start song over)
-            state = INIT;
+            break;
         case NEXT:
-            //go to next song
+            esp_avrc_ct_send_passthrough_cmd(0, ESP_AVRC_PT_CMD_FORWARD, ESP_AVRC_PT_CMD_STATE_PRESSED);
             state = INIT;
+            break;
         }
 
     }
@@ -341,8 +394,8 @@ void app_main(void)
 {
     config();
     //Handles LCD functions
-    xTaskCreatePinnedToCore(lcd, "LCDmessages", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL, 0);
-    xTaskCreatePinnedToCore(buttonHandler, "Button Handler", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL, 1);
+    xTaskCreate(lcd, "LCDmessages", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL);
+    xTaskCreate(buttonHandler, "Button Handler", configMINIMAL_STACK_SIZE * 3, NULL, 5, NULL);
     char bda_str[18] = {0};
     /* initialize NVS — it is used to store PHY calibration data */
     esp_err_t err = nvs_flash_init();

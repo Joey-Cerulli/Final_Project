@@ -31,6 +31,7 @@ enum {
     RINGBUFFER_MODE_DROPPING       /* ringbuffer is not buffering (dropping) incoming audio data, I2S is working */
 };
 
+
 /*******************************
  * STATIC FUNCTION DECLARATIONS
  ******************************/
@@ -132,7 +133,6 @@ static void bt_i2s_task_handler(void *arg)
                 item_size = 0;
                 /* receive data from ringbuffer and write it to I2S DMA transmit buffer */
                 data = (uint8_t *)xRingbufferReceiveUpTo(s_ringbuf_i2s, &item_size, (TickType_t)pdMS_TO_TICKS(20), item_size_upto);
-                printf("I2s Data %d bytes yummy yummy\n", bytes_written);
                 if (item_size == 0) {
                     ESP_LOGI(BT_APP_CORE_TAG, "ringbuffer underflowed! mode changed: RINGBUFFER_MODE_PREFETCHING");
                     ringbuffer_mode = RINGBUFFER_MODE_PREFETCHING;
