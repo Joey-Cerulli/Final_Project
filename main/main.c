@@ -98,8 +98,8 @@ void lcd(void *pvParameters){
         .font = HD44780_FONT_5X8,
         .lines = 2,
         .pins = {
-            .rs = GPIO_NUM_27,
-            .e  = GPIO_NUM_25,
+            .rs = GPIO_NUM_2,
+            .e  = GPIO_NUM_4,
             .d4 = GPIO_NUM_16,
             .d5 = GPIO_NUM_17,
             .d6 = GPIO_NUM_18,
@@ -107,6 +107,7 @@ void lcd(void *pvParameters){
             .bl = HD44780_NOT_USED
         }
     };
+    hd44780_init(&lcd);
 
     gpio_config_t io_conf = {
         .mode = GPIO_MODE_OUTPUT,
@@ -118,7 +119,7 @@ void lcd(void *pvParameters){
             (1ULL << lcd.pins.d6) |
             (1ULL << lcd.pins.d7),
     };
-    gpio_config(&io_conf);
+    gpio_config(&io_conf); 
 
     vTaskDelay(50/portTICK_PERIOD_MS);
     ESP_ERROR_CHECK(hd44780_init(&lcd));
@@ -126,6 +127,7 @@ void lcd(void *pvParameters){
     hd44780_upload_character(&lcd, 3, char_data);
     hd44780_upload_character(&lcd, 4, char_data + 8);
 
+    hd44780_clear(&lcd);
 
     while (1)
     {
