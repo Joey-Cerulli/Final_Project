@@ -49,8 +49,9 @@ static const uint8_t char_data[] =
 const char mesg1[] = "hey yall look at me im scrolling wooooooooo look at me go yayyy     ";
 const char mesg2[] = "hey yall its me again look at us yayyyyy yipee wahoooo     ";
 
+typedef enum {INIT, PL_WAIT, NX_WAIT, PLAY, NEXT} State_t;
 
-typedef enum {INIT, PL_WAIT, PR_WAIT, NX_WAIT, PLAY, NEXT, PREVIOUS} State_t;
+volatile bool songPlaying = false;
 
 /* event for stack up */
 enum {
@@ -153,64 +154,38 @@ void lcd(void *pvParameters){
 
 
 void buttonHandler(){
-    bool songPlaying = false;
     State_t state = INIT;
-    //int counter = 0;
-    //bool secPress = false;
-
+    songPlaying = true;
+    bool playPressed = false;
+    //bool prevPressed = false;
+    bool nextPressed = false;
     for(;;){
         vTaskDelay(10/portTICK_PERIOD_MS);
         switch(state){
         case INIT:
-            printf("INIT \n");
             //counter = 0;
             if (gpio_get_level(play) == 1){
+                playPressed = true;
                 state = PL_WAIT;
             }
-            else if (gpio_get_level(prev) == 1){
-                state = PR_WAIT;
-            }
             else if (gpio_get_level(next) == 1){
+                nextPressed = true;
                 state = NX_WAIT;
-            } 
+            }
             break;
         case PL_WAIT:
-            //counter++;
-            printf("PLAY WAITING \n");
-            if (gpio_get_level(play) == 0){
+            if (gpio_get_level(play) == 0 && playPressed){
+                playPressed = false;
                 state = PLAY;
-                /* if (counter > 50){
-                    state = PLAY;
-                } */
-            }
-            /*else{
-                 if (secPress){
-                    state = NEXT;
-                    secPress = false;
-                }
-                else{
-                    secPress = true;
-                    state = PLAY;
-                } 
-            }*/
-            break;
-         case PR_WAIT:
-            printf("PREV WAITING \n");
-            if (gpio_get_level(prev) == 0){
-                state = PREVIOUS;
             }
             break;
         case NX_WAIT:
-            printf("NEXT WAITING \n");
-            if (gpio_get_level(next) == 0){
+            if (gpio_get_level(next) == 0 && nextPressed){
+                nextPressed = false;
                 state = NEXT;
             }
             break; 
         case PLAY:
-            printf("PLAY STATE \n");
-            while (gpio_get_level(play) == 1){
-                vTaskDelay(10/portTICK_PERIOD_MS);
-            }
             if (songPlaying){
                 esp_avrc_ct_send_passthrough_cmd(0, ESP_AVRC_PT_CMD_PAUSE, ESP_AVRC_PT_CMD_STATE_PRESSED);
             }
@@ -219,15 +194,8 @@ void buttonHandler(){
             }
             songPlaying = !songPlaying;
             state = INIT;
-            //secPress = false;
-            break;
-        case PREVIOUS:
-            printf("PREV STATE \n");
-            esp_avrc_ct_send_passthrough_cmd(0, ESP_AVRC_PT_CMD_BACKWARD, ESP_AVRC_PT_CMD_STATE_PRESSED);
-            state = INIT;
             break;
         case NEXT:
-            printf("NEXT STATE \n");
             esp_avrc_ct_send_passthrough_cmd(0, ESP_AVRC_PT_CMD_FORWARD, ESP_AVRC_PT_CMD_STATE_PRESSED);
             state = INIT;
             break;
