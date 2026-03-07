@@ -199,7 +199,7 @@ void bt_i2s_driver_install(void)
 {
 #ifdef CONFIG_EXAMPLE_A2DP_SINK_OUTPUT_INTERNAL_DAC
     dac_continuous_config_t cont_cfg = {
-        .chan_mask = DAC_CHANNEL_MASK_ALL,
+        _mask = DAC_CHANNEL_MASK_ALL,
         .desc_num = 8,
         .buf_size = 2048,
         .freq_hz = 44100,

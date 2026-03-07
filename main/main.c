@@ -28,6 +28,7 @@
 #include "esp_avrc_api.h"\
 
 char TITLE[128];
+char ARTIST[128];
 
 #define next GPIO_NUM_32           //Next button pin
 #define prev GPIO_NUM_23            //Previous button pin
@@ -75,10 +76,12 @@ static void bt_av_hdl_stack_evt(uint16_t event, void *p_param);
 void avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param)
 {
     if (event == ESP_AVRC_CT_METADATA_RSP_EVT) {
+
+        /* --- TITLE --- */
         if (param->meta_rsp.attr_id == ESP_AVRC_MD_ATTR_TITLE) {
 
             const uint8_t *src = param->meta_rsp.attr_text;
-            size_t len = param->meta_rsp.attr_length;   // length provided by ESP-IDF
+            size_t len = param->meta_rsp.attr_length;
 
             size_t max = sizeof(TITLE) - 1;
             size_t copy_len = (len < max) ? len : max;
@@ -87,6 +90,21 @@ void avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param)
             TITLE[copy_len] = '\0';
 
             printf("Title: %s\n", TITLE);
+        }
+
+        /* --- ARTIST --- */
+        if (param->meta_rsp.attr_id == ESP_AVRC_MD_ATTR_ARTIST) {
+
+            const uint8_t *src = param->meta_rsp.attr_text;
+            size_t len = param->meta_rsp.attr_length;
+
+            size_t max = sizeof(ARTIST) - 1;
+            size_t copy_len = (len < max) ? len : max;
+
+            memcpy(ARTIST, src, copy_len);
+            ARTIST[copy_len] = '\0';
+
+            printf("Artist: %s\n", ARTIST);
         }
     }
 }
