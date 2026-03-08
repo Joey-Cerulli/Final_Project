@@ -32,7 +32,7 @@ char ARTIST[128];
 
 #define next GPIO_NUM_32           //Next button pin
 #define prev GPIO_NUM_23            //Previous button pin
-#define play GPIO_NUM_13           //Play/Pause button pin
+#define play GPIO_NUM_21           //Play/Pause button pin
 #define leftVol ADC_CHANNEL_4      //Left Volume adjusting potentiometer pin
 #define rightVol ADC_CHANNEL_5     //Right volume adjusting potentiometer pin
 #define ADC_ATTEN ADC_ATTEN_DB_12  //ADC Attenuation
@@ -234,6 +234,8 @@ void config(){
     gpio_reset_pin(next);
     gpio_set_direction(next, GPIO_MODE_INPUT);
     gpio_pulldown_en(next);
+
+    gpio_pulldown_en(CONFIG_EXAMPLE_I2S_DATA_PIN);
 }
 
 static char *bda2str(uint8_t * bda, char *str, size_t size)
