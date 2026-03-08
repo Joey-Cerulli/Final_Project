@@ -21,9 +21,9 @@
 #endif
 #include "freertos/ringbuf.h"
 
-
-#define RINGBUF_HIGHEST_WATER_LEVEL    (32 * 1024)
-#define RINGBUF_PREFETCH_WATER_LEVEL   (20 * 1024)
+//Double defaults
+#define RINGBUF_HIGHEST_WATER_LEVEL    (64 * 1024)
+#define RINGBUF_PREFETCH_WATER_LEVEL   (40 * 1024)
 
 enum {
     RINGBUFFER_MODE_PROCESSING,    /* ringbuffer is buffering incoming audio data, I2S is working */
