@@ -124,7 +124,7 @@ static void bt_i2s_task_handler(void *arg)
      * `dma_frame_num * dma_desc_num * i2s_channel_num * i2s_data_bit_width / 8`.
      * Transmit `dma_frame_num * dma_desc_num` bytes to DMA is trade-off.
      */
-    const size_t item_size_upto = 240 * 6;
+    const size_t item_size_upto = 4096;
     size_t bytes_written = 0;
 
     for (;;) {
@@ -132,7 +132,7 @@ static void bt_i2s_task_handler(void *arg)
             for (;;) {
                 item_size = 0;
                 /* receive data from ringbuffer and write it to I2S DMA transmit buffer */
-                data = (uint8_t *)xRingbufferReceiveUpTo(s_ringbuf_i2s, &item_size, (TickType_t)pdMS_TO_TICKS(20), item_size_upto);
+                data = (uint8_t *)xRingbufferReceiveUpTo(s_ringbuf_i2s, &item_size, (TickType_t)pdMS_TO_TICKS(1), item_size_upto);
                 if (item_size == 0) {
                     ESP_LOGI(BT_APP_CORE_TAG, "ringbuffer underflowed! mode changed: RINGBUFFER_MODE_PREFETCHING");
                     ringbuffer_mode = RINGBUFFER_MODE_PREFETCHING;
@@ -142,7 +142,7 @@ static void bt_i2s_task_handler(void *arg)
             #ifdef CONFIG_EXAMPLE_A2DP_SINK_OUTPUT_INTERNAL_DAC
                 dac_continuous_write(tx_chan, data, item_size, &bytes_written, -1);
             #else
-                i2s_channel_write(tx_chan, data, item_size, &bytes_written, portMAX_DELAY);
+                i2s_channel_write(tx_chan, data, item_size, &bytes_written, 0);
             #endif
                 vRingbufferReturnItem(s_ringbuf_i2s, (void *)data);
             }

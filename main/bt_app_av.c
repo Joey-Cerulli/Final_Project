@@ -216,7 +216,15 @@ void bt_i2s_driver_install(void)
     chan_cfg.auto_clear = true;
     i2s_std_config_t std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(44100),
-        .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
+        .slot_cfg = {
+            .data_bit_width = I2S_DATA_BIT_WIDTH_16BIT,   // actual audio bits
+            .slot_bit_width = I2S_SLOT_BIT_WIDTH_16BIT,   // slot size on the wire
+            .slot_mode = I2S_SLOT_MODE_STEREO,
+            .slot_mask = I2S_STD_SLOT_BOTH,
+            .ws_width = 16,
+            .ws_pol = false,
+            .bit_shift = true
+            },
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,
             .bclk = CONFIG_EXAMPLE_I2S_BCK_PIN,
@@ -372,7 +380,7 @@ static void bt_av_hdl_a2d_evt(uint16_t event, void *p_param)
             i2s_std_slot_config_t slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, ch_count);
             i2s_channel_reconfig_std_clock(tx_chan, &clk_cfg);
             i2s_channel_reconfig_std_slot(tx_chan, &slot_cfg);
-            //i2s_channel_enable(tx_chan);
+            i2s_channel_enable(tx_chan);
         #endif
             ESP_LOGI(BT_AV_TAG, "Configure audio player: 0x%x-0x%x-0x%x-0x%x-0x%x-%d-%d",
                      p_mcc->cie.sbc_info.samp_freq,
